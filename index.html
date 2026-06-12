@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#0a0c0f" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Apex — Kart Racing Companion (Prototype)</title>
+<style>
+  :root{
+    --bg:#0a0c0f;
+    --bg-2:#0e1116;
+    --card:#161b22;
+    --card-2:#1c222b;
+    --line:#252c37;
+    --txt:#f4f7fb;
+    --muted:#8a94a4;
+    --muted-2:#5b6573;
+    --green:#00e676;
+    --green-dim:#0bbf66;
+    --red:#ff4242;
+    --amber:#ffb020;
+    --blue:#3aa0ff;
+    --radius:18px;
+    --mono:"SF Mono",ui-monospace,"Roboto Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:var(--sans);
+    background:#000;
+    color:var(--txt);
+    display:flex;align-items:center;justify-content:center;
+    min-height:100vh;min-height:100dvh;
+    overflow:hidden;
+  }
+
+  /* ---------- Phone frame (desktop) ---------- */
+  .stage{
+    width:100%;height:100%;
+    display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(1200px 800px at 50% -10%, #14181f 0%, #050608 60%, #000 100%);
+    padding:24px;
+  }
+  .phone{
+    position:relative;
+    width:393px;height:852px;
+    max-height:96vh;max-height:96dvh;
+    background:var(--bg);
+    border-radius:54px;
+    box-shadow:0 0 0 12px #14171c, 0 0 0 14px #2a2f38, 0 40px 90px rgba(0,0,0,.7);
+    overflow:hidden;
+    display:flex;flex-direction:column;
+  }
+  /* On real phones: go fullscreen, drop the bezel */
+  @media (max-width:520px){
+    body{background:var(--bg);}
+    .stage{padding:0;background:var(--bg);}
+    .phone{
+      width:100%;height:100vh;height:100dvh;max-height:none;
+      border-radius:0;box-shadow:none;
+    }
+  }
+
+  .notch{
+    position:absolute;top:0;left:0;right:0;height:env(safe-area-inset-top,12px);
+    z-index:60;pointer-events:none;
+  }
+
+  /* ---------- Status bar ---------- */
+  .statusbar{
+    height:44px;flex:0 0 44px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 26px 0 30px;
+    font-size:14px;font-weight:600;letter-spacing:.3px;
+    color:var(--txt);
+    z-index:30;
+  }
+  .statusbar .right{display:flex;gap:6px;align-items:center;font-size:13px;}
+
+  /* ---------- App body ---------- */
+  .app{flex:1;display:flex;flex-direction:column;min-height:0;position:relative;}
+  .screens{flex:1;overflow:hidden;position:relative;}
+  .screen{
+    position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;
+    padding:6px 18px 120px;
+    -webkit-overflow-scrolling:touch;
+    display:none;
+    animation:fade .28s ease;
+  }
+  .screen.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  .screen::-webkit-scrollbar{display:none;}
+
+  /* ---------- Header ---------- */
+  .head{display:flex;align-items:center;justify-content:space-between;padding:8px 2px 14px;}
+  .head h1{font-size:26px;font-weight:800;letter-spacing:-.5px;margin:0;}
+  .head .sub{color:var(--muted);font-size:13px;margin-top:2px;font-weight:500;}
+
+  /* Driver switcher */
+  .driver{
+    display:flex;align-items:center;gap:9px;background:var(--card);
+    border:1px solid var(--line);border-radius:30px;padding:5px 6px 5px 12px;cursor:pointer;
+    transition:.2s;
+  }
+  .driver:active{transform:scale(.96);}
+  .driver .name{font-size:13px;font-weight:700;}
+  .avatar{
+    width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
+    font-size:12px;font-weight:800;color:#04130b;
+  }
+  .avatar.mike{background:linear-gradient(135deg,#00e676,#0bbf66);}
+  .avatar.tyler{background:linear-gradient(135deg,#3aa0ff,#7c5bff);color:#fff;}
+
+  /* ---------- Cards / common ---------- */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;}
+  .card + .card{margin-top:12px;}
+  .section-label{font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted-2);margin:22px 2px 10px;}
+  .row{display:flex;align-items:center;gap:12px;}
+  .between{justify-content:space-between;}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums;}
+  .green{color:var(--green);}
+  .red{color:var(--red);}
+  .muted{color:var(--muted);}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:4px 9px;border-radius:20px;}
+  .pill.pb{background:rgba(0,230,118,.14);color:var(--green);}
+  .pill.up{background:rgba(255,66,66,.14);color:var(--red);}
+  .pill.flat{background:rgba(138,148,164,.14);color:var(--muted);}
+
+  /* Hero stat */
+  .hero{
+    background:linear-gradient(160deg,#16241c 0%, #11171d 55%);
+    border:1px solid #1f3a2a;position:relative;overflow:hidden;
+  }
+  .hero::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;
+    background:radial-gradient(circle,rgba(0,230,118,.25),transparent 70%);}
+  .hero .k{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--green);}
+  .hero .big{font-family:var(--mono);font-size:46px;font-weight:700;letter-spacing:-1px;margin:6px 0 2px;}
+  .hero .ctx{color:var(--muted);font-size:13px;}
+
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;}
+  .stat .v{font-size:22px;font-weight:800;font-family:var(--mono);letter-spacing:-.5px;}
+  .stat .l{font-size:12px;color:var(--muted);margin-top:3px;font-weight:600;}
+
+  /* CTA */
+  .cta{
+    display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
+    background:var(--green);color:#04130b;border:none;border-radius:16px;
+    padding:17px;font-size:16px;font-weight:800;cursor:pointer;letter-spacing:.2px;
+    box-shadow:0 8px 24px rgba(0,230,118,.25);transition:.15s;
+  }
+  .cta:active{transform:scale(.97);}
+  .cta.ghost{background:var(--card);color:var(--txt);border:1px solid var(--line);box-shadow:none;}
+
+  /* Session list item */
+  .sitem{display:flex;align-items:center;gap:14px;padding:14px 4px;border-bottom:1px solid var(--line);cursor:pointer;}
+  .sitem:last-child{border-bottom:none;}
+  .sicon{width:42px;height:42px;border-radius:13px;background:var(--card-2);display:grid;place-items:center;font-size:20px;flex:0 0 42px;}
+  .sitem .t{font-weight:700;font-size:15px;}
+  .sitem .d{color:var(--muted);font-size:12.5px;margin-top:2px;}
+  .sitem .time{font-family:var(--mono);font-weight:700;font-size:15px;text-align:right;}
+  .chev{color:var(--muted-2);font-size:18px;}
+
+  /* ---------- Timer screen ---------- */
+  .timer-wrap{display:flex;flex-direction:column;height:100%;}
+  .timer-top{padding:6px 2px 2px;}
+  .track-chip{display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line);
+    padding:7px 13px;border-radius:24px;font-size:13px;font-weight:600;}
+  .bigclock{
+    text-align:center;margin:18px 0 6px;
+  }
+  .bigclock .label{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:700;}
+  .bigclock .val{font-family:var(--mono);font-size:62px;font-weight:700;letter-spacing:-2px;line-height:1.05;margin-top:6px;}
+  .delta-line{font-family:var(--mono);font-size:18px;font-weight:700;margin-top:4px;height:24px;}
+  .clock-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:14px 0;}
+  .clock-stats .s{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 8px;text-align:center;}
+  .clock-stats .s .l{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:700;}
+  .clock-stats .s .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:4px;}
+  .laplist{flex:1;overflow-y:auto;margin-top:4px;}
+  .laplist::-webkit-scrollbar{display:none;}
+  .lap{display:flex;align-items:center;justify-content:space-between;padding:11px 4px;border-bottom:1px solid var(--line);font-size:14px;}
+  .lap .n{color:var(--muted);font-weight:700;width:60px;}
+  .lap .lt{font-family:var(--mono);font-weight:700;font-size:15px;}
+  .lap.best .lt{color:var(--green);}
+  .lap .tag{font-size:10px;font-weight:800;letter-spacing:.5px;padding:2px 7px;border-radius:10px;background:rgba(0,230,118,.15);color:var(--green);}
+  .timer-controls{display:flex;gap:12px;padding:10px 0 4px;}
+  .tbtn{flex:1;border:none;border-radius:16px;padding:18px;font-size:16px;font-weight:800;cursor:pointer;transition:.12s;}
+  .tbtn:active{transform:scale(.96);}
+  .tbtn.lap{background:var(--green);color:#04130b;flex:2;box-shadow:0 8px 22px rgba(0,230,118,.25);}
+  .tbtn.stop{background:rgba(255,66,66,.15);color:var(--red);border:1px solid rgba(255,66,66,.35);}
+  .tbtn.start{background:var(--green);color:#04130b;box-shadow:0 8px 22px rgba(0,230,118,.25);}
+
+  /* ---------- Garage ---------- */
+  .kart{position:relative;overflow:hidden;}
+  .kart .top{display:flex;align-items:center;gap:14px;}
+  .kart .badge{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-size:24px;flex:0 0 48px;}
+  .kart .nm{font-weight:800;font-size:17px;}
+  .kart .meta{color:var(--muted);font-size:12.5px;margin-top:2px;}
+  .setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+  .setup{background:var(--card-2);border-radius:12px;padding:10px 12px;}
+  .setup .l{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.3px;}
+  .setup .v{font-family:var(--mono);font-size:15px;font-weight:700;margin-top:3px;}
+
+  /* ---------- Insights ---------- */
+  .chartcard{padding:16px 14px 10px;}
+  .chart{width:100%;height:150px;display:block;margin-top:8px;}
+  .legend{display:flex;gap:16px;margin-top:8px;font-size:12px;color:var(--muted);}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle;}
+  .trackrow{display:flex;align-items:center;justify-content:space-between;padding:13px 4px;border-bottom:1px solid var(--line);}
+  .trackrow:last-child{border-bottom:none;}
+  .trackrow .nm{font-weight:700;font-size:14.5px;}
+  .trackrow .sub{font-size:12px;color:var(--muted);margin-top:2px;}
+  .bar{height:8px;border-radius:6px;background:var(--card-2);overflow:hidden;margin-top:8px;}
+  .bar > i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--green),#7affc0);}
+
+  /* ---------- Bottom nav ---------- */
+  .tabbar{
+    flex:0 0 auto;display:flex;justify-content:space-around;align-items:center;
+    background:rgba(13,16,21,.92);backdrop-filter:blur(18px);
+    border-top:1px solid var(--line);
+    padding:9px 6px calc(9px + env(safe-area-inset-bottom,8px));
+    z-index:40;
+  }
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;background:none;border:none;
+    color:var(--muted-2);font-size:10px;font-weight:700;cursor:pointer;padding:4px 0;letter-spacing:.2px;}
+  .tab svg{width:24px;height:24px;}
+  .tab.active{color:var(--green);}
+  .tab.center{margin-top:-2px;}
+  .tab.center .fab{
+    width:52px;height:52px;border-radius:50%;background:var(--green);display:grid;place-items:center;
+    box-shadow:0 6px 18px rgba(0,230,118,.4);margin-bottom:1px;
+  }
+  .tab.center .fab svg{width:26px;height:26px;color:#04130b;}
+  .tab.center span{color:var(--green);}
+
+  /* ---------- Detail overlay ---------- */
+  .overlay{
+    position:absolute;inset:0;background:var(--bg);z-index:55;display:none;flex-direction:column;
+    animation:slideup .3s cubic-bezier(.2,.8,.2,1);
+  }
+  .overlay.open{display:flex;}
+  @keyframes slideup{from{transform:translateY(100%);}to{transform:none;}}
+  .ohead{display:flex;align-items:center;gap:14px;padding:16px 18px 12px;border-bottom:1px solid var(--line);}
+  .back{background:var(--card);border:1px solid var(--line);width:38px;height:38px;border-radius:50%;
+    display:grid;place-items:center;color:var(--txt);font-size:20px;cursor:pointer;flex:0 0 38px;}
+  .obody{flex:1;overflow-y:auto;padding:16px 18px 40px;}
+  .obody::-webkit-scrollbar{display:none;}
+
+  /* ---------- Driver sheet ---------- */
+  .sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:70;display:none;}
+  .sheet-bg.open{display:block;animation:fade .2s;}
+  .sheet{
+    position:absolute;left:0;right:0;bottom:0;z-index:71;background:var(--card);
+    border-radius:24px 24px 0 0;border-top:1px solid var(--line);padding:10px 18px calc(24px + env(safe-area-inset-bottom,8px));
+    transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.8,.2,1);
+  }
+  .sheet.open{transform:none;}
+  .grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:6px auto 14px;}
+  .sheet h3{margin:2px 2px 10px;font-size:15px;}
+  .driver-opt{display:flex;align-items:center;gap:13px;padding:13px 6px;border-radius:14px;cursor:pointer;}
+  .driver-opt:active{background:var(--card-2);}
+  .driver-opt .avatar{width:40px;height:40px;font-size:15px;}
+  .driver-opt .nm{font-weight:700;font-size:15px;}
+  .driver-opt .sub{font-size:12px;color:var(--muted);}
+  .driver-opt .check{margin-left:auto;color:var(--green);font-size:20px;display:none;}
+  .driver-opt.sel .check{display:block;}
+
+  .empty{text-align:center;color:var(--muted);padding:30px 10px;font-size:14px;}
+  .note{background:var(--card-2);border-radius:12px;padding:13px 14px;font-size:13.5px;line-height:1.5;color:#d6dde6;}
+  .tagrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
+  .tg{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:var(--card-2);color:var(--muted);}
+
+  /* prototype ribbon */
+  .ribbon{position:fixed;top:14px;left:-44px;transform:rotate(-45deg);background:var(--amber);color:#1a1000;
+    font-size:10px;font-weight:800;letter-spacing:1px;padding:4px 50px;z-index:200;pointer-events:none;display:none;}
+  @media (min-width:521px){.ribbon{display:block;}}
+</style>
+</head>
+<body>
+<div class="ribbon">PROTOTYPE</div>
+<div class="stage">
+  <div class="phone">
+    <!-- status bar -->
+    <div class="statusbar">
+      <span id="clock">9:41</span>
+      <span class="right">
+        <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="4.5" width="3" height="7.5" rx="1"/><rect x="9" y="2" width="3" height="10" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.2c2 0 3.9.8 5.3 2.1l1.2-1.3C13 1.3 10.6.4 8 .4S3 1.3 1.5 3l1.2 1.3C4.1 3 6 2.2 8 2.2zM8 5.5c1.1 0 2.1.4 2.9 1.2l1.2-1.3C11 4.2 9.6 3.7 8 3.7s-3 .5-4.1 1.7l1.2 1.3C5.9 5.9 6.9 5.5 8 5.5zm0 3.2 1.6 1.8L8 12l-1.6-1.5L8 8.7z"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="3" stroke="currentColor" opacity=".5"/><rect x="2.5" y="2.5" width="15" height="7" rx="1.5" fill="currentColor"/><rect x="22.5" y="4" width="1.5" height="4" rx="1" fill="currentColor" opacity=".5"/></svg>
+      </span>
+    </div>
+
+    <div class="app">
+      <div class="screens">
+
+        <!-- ===================== HOME ===================== -->
+        <section class="screen active" id="home">
+          <div class="head">
+            <div>
+              <h1>Hey, <span id="greetName">Mike</span> 👋</h1>
+              <div class="sub" id="greetSub">Ready to chase a PB?</div>
+            </div>
+            <div class="driver" onclick="openSheet()">
+              <span class="name" id="driverName">Mike</span>
+              <div class="avatar mike" id="driverAv">MR</div>
+            </div>
+          </div>
+
+          <div class="card hero">
+            <div class="k">Personal Best · <span id="homeTrack">Sumner Karting</span></div>
+            <div class="big mono" id="homePB">42.18</div>
+            <div class="ctx" id="homePBctx">Set 4 days ago · Rotax Senior</div>
+          </div>
+
+          <div class="stat-grid" style="margin-top:12px;">
+            <div class="stat"><div class="v" id="stSessions">38</div><div class="l">Sessions logged</div></div>
+            <div class="stat"><div class="v" id="stLaps">1,204</div><div class="l">Total laps</div></div>
+            <div class="stat"><div class="v green" id="stImprove">−1.3s</div><div class="l">Gained this month</div></div>
+            <div class="stat"><div class="v" id="stConsist">94%</div><div class="l">Consistency</div></div>
+          </div>
+
+          <button class="cta" style="margin-top:16px;" onclick="go('timer')">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6M12 5V2"/></svg>
+            Start a Session
+          </button>
+
+          <div class="section-label">Last session</div>
+          <div class="card">
+            <div class="row between">
+              <div>
+                <div style="font-weight:800;font-size:16px;" id="lastTrack">Sumner Karting Complex</div>
+                <div class="muted" style="font-size:12.5px;margin-top:3px;" id="lastMeta">Jun 8 · 22 laps · 18°C · Dry</div>
+              </div>
+              <span class="pill pb">▲ NEW PB</span>
+            </div>
+            <div class="stat-grid" style="margin-top:14px;">
+              <div class="stat" style="background:var(--card-2);"><div class="v mono" id="lastBest">42.18</div><div class="l">Best lap</div></div>
+              <div class="stat" style="background:var(--card-2);"><div class="v mono" id="lastAvg">43.05</div><div class="l">Avg lap</div></div>
+            </div>
+            <button class="cta ghost" style="margin-top:12px;padding:13px;font-size:14px;" onclick="openSession(0)">View session details</button>
+          </div>
+
+          <div class="section-label">Conditions today</div>
+          <div class="card row between">
+            <div class="row" style="gap:14px;">
+              <div style="font-size:34px;">⛅</div>
+              <div>
+                <div style="font-weight:700;">19°C · Partly cloudy</div>
+                <div class="muted" style="font-size:12.5px;margin-top:2px;">Track temp ~26°C · Wind 8 km/h</div>
+              </div>
+            </div>
+            <span class="pill flat">Grippy</span>
+          </div>
+        </section>
+
+        <!-- ===================== TIMER ===================== -->
+        <section class="screen" id="timer">
+          <div class="timer-wrap">
+            <div class="timer-top">
+              <div class="row between">
+                <span class="track-chip">📍 <span id="tk">Sumner Karting</span></span>
+                <span class="track-chip" style="color:var(--green);" id="modeChip">● GPS auto-lap</span>
+              </div>
+            </div>
+
+            <div class="bigclock">
+              <div class="label">Current Lap</div>
+              <div class="val mono" id="curLap">0:00.0</div>
+              <div class="delta-line mono" id="delta"></div>
+            </div>
+
+            <div class="clock-stats">
+              <div class="s"><div class="l">Last</div><div class="v mono" id="lastL">—</div></div>
+              <div class="s"><div class="l">Best</div><div class="v mono green" id="bestL">—</div></div>
+              <div class="s"><div class="l">Laps</div><div class="v mono" id="lapCount">0</div></div>
+            </div>
+
+            <div class="laplist" id="laps">
+              <div class="empty">Tap <b>Start</b> to begin timing.<br>Lap times will appear here.</div>
+            </div>
+
+            <div class="timer-controls" id="ctrlIdle">
+              <button class="tbtn start" onclick="startTimer()">Start Session</button>
+            </div>
+            <div class="timer-controls" id="ctrlRun" style="display:none;">
+              <button class="tbtn stop" onclick="stopTimer()">Finish</button>
+              <button class="tbtn lap" onclick="recordLap()">+ Lap</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================== SESSIONS ===================== -->
+        <section class="screen" id="sessions">
+          <div class="head"><div><h1>Sessions</h1><div class="sub" id="sessSub">Mike · 38 logged</div></div></div>
+
+          <div class="section-label">This week</div>
+          <div class="card" id="sessWeek"></div>
+
+          <div class="section-label">Earlier</div>
+          <div class="card" id="sessEarlier"></div>
+        </section>
+
+        <!-- ===================== GARAGE ===================== -->
+        <section class="screen" id="garage">
+          <div class="head"><div><h1>Garage</h1><div class="sub">Karts &amp; saved setups</div></div></div>
+          <div id="garageList"></div>
+          <button class="cta ghost" style="margin-top:14px;">+ Add a kart</button>
+        </section>
+
+        <!-- ===================== INSIGHTS ===================== -->
+        <section class="screen" id="insights">
+          <div class="head"><div><h1>Insights</h1><div class="sub" id="insSub">Mike · last 8 sessions</div></div></div>
+
+          <div class="card chartcard">
+            <div class="row between">
+              <div style="font-weight:800;font-size:15px;">Best lap trend</div>
+              <span class="pill pb">▼ Faster</span>
+            </div>
+            <svg class="chart" viewBox="0 0 320 150" preserveAspectRatio="none" id="trendChart"></svg>
+            <div class="legend"><span><i style="background:var(--green)"></i>Best lap</span><span><i style="background:#3a4250"></i>Avg lap</span></div>
+          </div>
+
+          <div class="section-label">Personal bests by track</div>
+          <div class="card" id="trackPBs"></div>
+
+          <div class="section-label">Consistency</div>
+          <div class="card">
+            <div class="row between">
+              <div style="font-weight:700;">Lap-time spread</div>
+              <div class="mono" style="font-weight:800;" id="consistVal">94%</div>
+            </div>
+            <div class="bar"><i id="consistBar" style="width:94%"></i></div>
+            <div class="muted" style="font-size:12.5px;margin-top:10px;line-height:1.5;">
+              Your laps are landing within <b class="mono" id="spread">±0.6s</b> of each other — strong race pace. Tighten braking at T4 to gain more.
+            </div>
+          </div>
+        </section>
+
+      </div><!-- /screens -->
+
+      <!-- ===== Session detail overlay ===== -->
+      <div class="overlay" id="detail">
+        <div class="ohead">
+          <button class="back" onclick="closeSession()">‹</button>
+          <div>
+            <div style="font-weight:800;font-size:17px;" id="dTrack">Session</div>
+            <div class="muted" style="font-size:12.5px;" id="dDate"></div>
+          </div>
+        </div>
+        <div class="obody" id="detailBody"></div>
+      </div>
+
+      <!-- ===== Bottom nav ===== -->
+      <nav class="tabbar">
+        <button class="tab active" data-screen="home" onclick="go('home')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+          <span>Home</span>
+        </button>
+        <button class="tab" data-screen="sessions" onclick="go('sessions')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+          <span>Sessions</span>
+        </button>
+        <button class="tab center" data-screen="timer" onclick="go('timer')">
+          <div class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6M12 5V2"/></svg></div>
+          <span>Time</span>
+        </button>
+        <button class="tab" data-screen="garage" onclick="go('garage')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l2-6h14l2 6"/><path d="M3 11v8h3v-3h12v3h3v-8z"/><circle cx="7.5" cy="15" r="1"/><circle cx="16.5" cy="15" r="1"/></svg>
+          <span>Garage</span>
+        </button>
+        <button class="tab" data-screen="insights" onclick="go('insights')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V4M4 20h16"/><path d="M8 16l3.5-4 3 2.5L20 8"/></svg>
+          <span>Insights</span>
+        </button>
+      </nav>
+
+      <!-- ===== Driver switch sheet ===== -->
+      <div class="sheet-bg" id="sheetBg" onclick="closeSheet()"></div>
+      <div class="sheet" id="sheet">
+        <div class="grab"></div>
+        <h3>Switch driver</h3>
+        <div class="driver-opt sel" data-driver="mike" onclick="setDriver('mike')">
+          <div class="avatar mike">MR</div>
+          <div><div class="nm">Mike Reyes</div><div class="sub">Rotax Senior · You</div></div>
+          <div class="check">✓</div>
+        </div>
+        <div class="driver-opt" data-driver="tyler" onclick="setDriver('tyler')">
+          <div class="avatar tyler">TR</div>
+          <div><div class="nm">Tyler Reyes</div><div class="sub">Cadet · Age 11</div></div>
+          <div class="check">✓</div>
+        </div>
+        <button class="cta ghost" style="margin-top:10px;padding:13px;font-size:14px;">+ Add driver</button>
+      </div>
+
+    </div><!-- /app -->
+  </div><!-- /phone -->
+</div>
+
+<script>
+/* ---------------- Mock data ---------------- */
+const DATA = {
+  mike: {
+    name:"Mike", full:"Mike Reyes", initials:"MR", cls:"mike",
+    track:"Sumner Karting", trackFull:"Sumner Karting Complex",
+    pb:"42.18", pbCtx:"Set 4 days ago · Rotax Senior",
+    sessions:"38", laps:"1,204", improve:"−1.3s", consist:"94%",
+    spread:"±0.6s",
+    last:{track:"Sumner Karting Complex", meta:"Jun 8 · 22 laps · 18°C · Dry", best:"42.18", avg:"43.05", pb:true},
+    trend:[44.6,44.1,43.8,43.9,43.2,42.9,42.5,42.18],
+    trendAvg:[45.8,45.2,45.0,44.8,44.1,43.9,43.6,43.05],
+    weekS:[
+      {track:"Sumner Karting Complex",date:"Jun 8, 2026",laps:22,best:"42.18",avg:"43.05",temp:"18°C",cond:"Dry",pb:true,kart:"Kart #7 · Rotax",icon:"🏁"},
+      {track:"Sumner Karting Complex",date:"Jun 5, 2026",laps:18,best:"42.71",avg:"43.40",temp:"21°C",cond:"Dry",pb:false,kart:"Kart #7 · Rotax",icon:"🏁"},
+    ],
+    earlierS:[
+      {track:"Goldfield Raceway",date:"May 30, 2026",laps:25,best:"58.92",avg:"59.80",temp:"24°C",cond:"Dry",pb:true,kart:"Kart #7 · Rotax",icon:"🏎️"},
+      {track:"Sumner Karting Complex",date:"May 24, 2026",laps:20,best:"43.10",avg:"43.95",temp:"16°C",cond:"Damp",pb:false,kart:"Kart #7 · Rotax",icon:"🏁"},
+      {track:"Riverside Kartway",date:"May 17, 2026",laps:19,best:"51.44",avg:"52.30",temp:"22°C",cond:"Dry",pb:false,kart:"Kart #7 · Rotax",icon:"🌊"},
+    ],
+    trackPBs:[
+      {nm:"Sumner Karting Complex",t:"42.18",sub:"12 sessions · best Jun 8",pct:100},
+      {nm:"Riverside Kartway",t:"51.44",sub:"6 sessions · best May 17",pct:74},
+      {nm:"Goldfield Raceway",t:"58.92",sub:"4 sessions · best May 30",pct:58},
+    ],
+  },
+  tyler: {
+    name:"Tyler", full:"Tyler Reyes", initials:"TR", cls:"tyler",
+    track:"Sumner Karting", trackFull:"Sumner Karting Complex",
+    pb:"47.05", pbCtx:"Set 2 days ago · Cadet",
+    sessions:"21", laps:"602", improve:"−2.1s", consist:"88%",
+    spread:"±1.1s",
+    last:{track:"Sumner Karting Complex", meta:"Jun 10 · 16 laps · 20°C · Dry", best:"47.05", avg:"48.30", pb:true},
+    trend:[51.0,50.2,49.6,49.1,48.4,48.0,47.4,47.05],
+    trendAvg:[52.4,51.9,51.0,50.6,49.8,49.4,48.9,48.30],
+    weekS:[
+      {track:"Sumner Karting Complex",date:"Jun 10, 2026",laps:16,best:"47.05",avg:"48.30",temp:"20°C",cond:"Dry",pb:true,kart:"Cadet #14",icon:"🏁"},
+    ],
+    earlierS:[
+      {track:"Sumner Karting Complex",date:"Jun 3, 2026",laps:15,best:"47.62",avg:"48.90",temp:"19°C",cond:"Dry",pb:false,kart:"Cadet #14",icon:"🏁"},
+      {track:"Riverside Kartway",date:"May 27, 2026",laps:14,best:"56.10",avg:"57.40",temp:"23°C",cond:"Dry",pb:true,kart:"Cadet #14",icon:"🌊"},
+      {track:"Sumner Karting Complex",date:"May 20, 2026",laps:17,best:"48.20",avg:"49.60",temp:"17°C",cond:"Dry",pb:false,kart:"Cadet #14",icon:"🏁"},
+    ],
+    trackPBs:[
+      {nm:"Sumner Karting Complex",t:"47.05",sub:"9 sessions · best Jun 10",pct:100},
+      {nm:"Riverside Kartway",t:"56.10",sub:"3 sessions · best May 27",pct:70},
+    ],
+  }
+};
+
+const GARAGE = {
+  mike:[
+    {nm:"Kart #7", meta:"CRG chassis · Rotax Senior Max", color:"linear-gradient(135deg,#00e676,#0bbf66)",badge:"🏁",txt:"#04130b",
+     setup:{Tires:"Front 11 / Rear 12 psi",Gearing:"11 / 78",Chassis:"Medium axle",Carb:"165 / 35",Seat:"Standard",Notes:"Add front grip in cool"}},
+    {nm:"Spare #3", meta:"Tony Kart · backup", color:"var(--card-2)",badge:"🔧",txt:"#fff",
+     setup:{Tires:"Front 11 / Rear 12 psi",Gearing:"11 / 80",Chassis:"Soft axle",Carb:"168 / 35",Seat:"Standard",Notes:"Rain default"}},
+  ],
+  tyler:[
+    {nm:"Cadet #14", meta:"OTK · Cadet (Comer W60)", color:"linear-gradient(135deg,#3aa0ff,#7c5bff)",badge:"🏁",txt:"#fff",
+     setup:{Tires:"Front 10 / Rear 11 psi",Gearing:"10 / 82",Chassis:"Soft axle",Carb:"Stock",Seat:"Junior pad",Notes:"Smooth throttle T2"}},
+  ]
+};
+
+/* ---------------- State + render ---------------- */
+let current = "mike";
+
+function $(id){return document.getElementById(id);}
+
+function render(){
+  const d = DATA[current];
+  // home
+  $("greetName").textContent = d.name;
+  $("driverName").textContent = d.name;
+  $("driverAv").textContent = d.initials;
+  $("driverAv").className = "avatar "+d.cls;
+  $("homeTrack").textContent = d.track;
+  $("homePB").textContent = d.pb;
+  $("homePBctx").textContent = d.pbCtx;
+  $("stSessions").textContent = d.sessions;
+  $("stLaps").textContent = d.laps;
+  $("stImprove").textContent = d.improve;
+  $("stConsist").textContent = d.consist;
+  $("lastTrack").textContent = d.last.track;
+  $("lastMeta").textContent = d.last.meta;
+  $("lastBest").textContent = d.last.best;
+  $("lastAvg").textContent = d.last.avg;
+  $("tk").textContent = d.track;
+  // sessions
+  $("sessSub").textContent = d.full.split(" ")[0]+" · "+d.sessions+" logged";
+  $("insSub").textContent = d.full.split(" ")[0]+" · last "+d.trend.length+" sessions";
+  $("sessWeek").innerHTML = d.weekS.map((s,i)=>sessionRow(s,i,"w")).join("") || '<div class="empty">No sessions this week.</div>';
+  $("sessEarlier").innerHTML = d.earlierS.map((s,i)=>sessionRow(s,i,"e")).join("");
+  // insights
+  $("consistVal").textContent = d.consist;
+  $("consistBar").style.width = d.consist;
+  $("spread").textContent = d.spread;
+  $("trackPBs").innerHTML = d.trackPBs.map(t=>`
+    <div class="trackrow">
+      <div style="flex:1;">
+        <div class="nm">${t.nm}</div>
+        <div class="sub">${t.sub}</div>
+        <div class="bar"><i style="width:${t.pct}%"></i></div>
+      </div>
+      <div class="mono" style="font-weight:800;font-size:17px;margin-left:14px;">${t.t}</div>
+    </div>`).join("");
+  // garage
+  $("garageList").innerHTML = GARAGE[current].map(k=>`
+    <div class="card kart">
+      <div class="top">
+        <div class="badge" style="background:${k.color};color:${k.txt}">${k.badge}</div>
+        <div><div class="nm">${k.nm}</div><div class="meta">${k.meta}</div></div>
+      </div>
+      <div class="setup-grid">
+        ${Object.entries(k.setup).map(([l,v])=>`<div class="setup"><div class="l">${l}</div><div class="v">${v}</div></div>`).join("")}
+      </div>
+    </div>`).join("");
+  drawChart();
+}
+
+function sessionRow(s,i,grp){
+  return `<div class="sitem" onclick="openSession('${grp}',${i})">
+    <div class="sicon">${s.icon}</div>
+    <div style="flex:1;">
+      <div class="t">${s.track}${s.pb?' <span class="pill pb" style="margin-left:4px;">PB</span>':''}</div>
+      <div class="d">${s.date} · ${s.laps} laps · ${s.temp} ${s.cond}</div>
+    </div>
+    <div><div class="time">${s.best}</div><div class="muted" style="font-size:11px;text-align:right;">best lap</div></div>
+    <span class="chev">›</span>
+  </div>`;
+}
+
+/* ---------------- Navigation ---------------- */
+function go(screen){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("active",s.id===screen));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.screen===screen));
+  $("detail").classList.remove("open");
+  document.querySelector(".screens").scrollTop=0;
+  const sc=document.getElementById(screen); if(sc) sc.scrollTop=0;
+}
+
+/* ---------------- Driver sheet ---------------- */
+function openSheet(){$("sheetBg").classList.add("open");$("sheet").classList.add("open");}
+function closeSheet(){$("sheetBg").classList.remove("open");$("sheet").classList.remove("open");}
+function setDriver(dr){
+  current=dr;
+  document.querySelectorAll(".driver-opt").forEach(o=>o.classList.toggle("sel",o.dataset.driver===dr));
+  render();
+  closeSheet();
+  go("home");
+}
+
+/* ---------------- Session detail ---------------- */
+function openSession(grp,i){
+  const d=DATA[current];
+  let s;
+  if(grp===0||grp==="0"){ s=d.weekS[0]; } // from home "last session"
+  else if(grp==="w"){ s=d.weekS[i]; }
+  else { s=d.earlierS[i]; }
+  if(!s) s=d.weekS[0]||d.earlierS[0];
+  $("dTrack").textContent=s.track;
+  $("dDate").textContent=s.date+" · "+s.kart;
+  // build fake lap list around best/avg
+  const best=parseFloat(s.best), avg=parseFloat(s.avg);
+  let laps="";
+  for(let l=1;l<=s.laps;l++){
+    let t;
+    if(l<=2) t=avg+0.8+Math.random()*0.6;              // out laps slower
+    else t=best+Math.random()*(avg-best)*1.8;
+    const isBest=(l===Math.ceil(s.laps*0.7));
+    if(isBest) t=best;
+    laps+=`<div class="lap ${isBest?'best':''}">
+      <span class="n">Lap ${l}</span>
+      <span class="lt">${t.toFixed(2)}${isBest?' <span class="tag">FAST</span>':''}</span>
+    </div>`;
+  }
+  $("detailBody").innerHTML=`
+    <div class="stat-grid">
+      <div class="stat"><div class="v mono green">${s.best}</div><div class="l">Best lap</div></div>
+      <div class="stat"><div class="v mono">${s.avg}</div><div class="l">Avg lap</div></div>
+    </div>
+    <div class="stat-grid" style="margin-top:12px;">
+      <div class="stat"><div class="v mono">${s.laps}</div><div class="l">Laps</div></div>
+      <div class="stat"><div class="v">${s.temp} · ${s.cond}</div><div class="l">Conditions</div></div>
+    </div>
+
+    <div class="section-label">Setup used</div>
+    <div class="card">
+      <div class="setup-grid" style="margin-top:0;">
+        ${Object.entries(GARAGE[current][0].setup).map(([l,v])=>`<div class="setup"><div class="l">${l}</div><div class="v">${v}</div></div>`).join("")}
+      </div>
+    </div>
+
+    <div class="section-label">Driver notes</div>
+    <div class="note">${noteFor(s)}</div>
+    <div class="tagrow"><span class="tg">#${s.cond.toLowerCase()}</span><span class="tg">#braking</span><span class="tg">${s.pb?'#newPB':'#consistent'}</span></div>
+
+    <div class="section-label">Lap times</div>
+    <div class="card" style="padding:4px 14px;">${laps}</div>
+  `;
+  $("detail").classList.add("open");
+}
+function noteFor(s){
+  if(s.pb) return "Great rhythm today. Found time braking later into T4 and carrying speed through the esses. Rear felt planted on the new tire pressures — keep this setup.";
+  return "Decent pace but inconsistent on entry to T1. Try one click softer on the seat strut and warm the tires an extra lap before pushing.";
+}
+function closeSession(){$("detail").classList.remove("open");}
+
+/* ---------------- Trend chart (SVG) ---------------- */
+function drawChart(){
+  const d=DATA[current];
+  const svg=$("trendChart");
+  const W=320,H=150,pad=14;
+  const all=d.trend.concat(d.trendAvg);
+  const min=Math.min(...all)-0.3, max=Math.max(...all)+0.3;
+  const x=i=>pad+i*((W-pad*2)/(d.trend.length-1));
+  const y=v=>pad+(1-(v-min)/(max-min))*(H-pad*2);
+  const line=(arr)=>arr.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(' ');
+  const area=line(d.trend)+` L${x(d.trend.length-1)} ${H-pad} L${x(0)} ${H-pad} Z`;
+  let dots=d.trend.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="${i===d.trend.length-1?4.5:3}" fill="${i===d.trend.length-1?'#00e676':'#0d1014'}" stroke="#00e676" stroke-width="2"/>`).join("");
+  svg.innerHTML=`
+    <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#00e676" stop-opacity=".28"/>
+      <stop offset="1" stop-color="#00e676" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path d="${area}" fill="url(#g)"/>
+    <path d="${line(d.trendAvg)}" fill="none" stroke="#3a4250" stroke-width="2.5" stroke-linejoin="round" stroke-dasharray="5 5"/>
+    <path d="${line(d.trend)}" fill="none" stroke="#00e676" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}`;
+}
+
+/* ---------------- Live lap timer ---------------- */
+let running=false, t0=0, lapStart=0, raf=null, lapTimes=[], best=null;
+function fmt(ms){
+  const m=Math.floor(ms/60000);
+  const s=Math.floor((ms%60000)/1000);
+  const t=Math.floor((ms%1000)/100);
+  return (m>0?m+":":"0:")+String(s).padStart(2,"0")+"."+t;
+}
+function tick(){
+  const now=performance.now();
+  $("curLap").textContent=fmt(now-lapStart);
+  if(best!=null){
+    const delta=(now-lapStart)-best;
+    const el=$("delta");
+    el.textContent=(delta>=0?"+":"")+(delta/1000).toFixed(1);
+    el.className="delta-line mono "+(delta<=0?"green":"red");
+  }
+  raf=requestAnimationFrame(tick);
+}
+function startTimer(){
+  running=true; lapTimes=[]; best=null;
+  t0=lapStart=performance.now();
+  $("ctrlIdle").style.display="none";
+  $("ctrlRun").style.display="flex";
+  $("laps").innerHTML="";
+  $("delta").textContent="";
+  $("lapCount").textContent="0";
+  $("lastL").textContent="—";
+  $("bestL").textContent="—";
+  tick();
+}
+function recordLap(){
+  if(!running) return;
+  const now=performance.now();
+  const lt=now-lapStart;
+  lapStart=now;
+  lapTimes.push(lt);
+  const isBest=(best==null||lt<best);
+  if(isBest) best=lt;
+  $("lastL").textContent=fmt(lt);
+  $("bestL").textContent=fmt(best);
+  $("lapCount").textContent=lapTimes.length;
+  // rebuild list (newest on top)
+  $("laps").innerHTML=lapTimes.map((v,i)=>{
+    const b=(v===best);
+    return `<div class="lap ${b?'best':''}"><span class="n">Lap ${i+1}</span><span class="lt">${fmt(v)}${b?' <span class="tag">BEST</span>':''}</span></div>`;
+  }).reverse().join("");
+  if(navigator.vibrate) navigator.vibrate(20);
+}
+function stopTimer(){
+  running=false;
+  if(raf) cancelAnimationFrame(raf);
+  $("ctrlRun").style.display="none";
+  $("ctrlIdle").style.display="flex";
+  $("curLap").textContent="0:00.0";
+  $("delta").textContent="";
+  if(lapTimes.length){
+    $("laps").insertAdjacentHTML("afterbegin",
+      `<div class="card" style="margin:6px 0 12px;background:var(--card-2);text-align:center;">
+        <div class="muted" style="font-size:12px;font-weight:700;letter-spacing:1px;">SESSION SAVED ✓</div>
+        <div class="mono" style="font-size:13px;margin-top:6px;">${lapTimes.length} laps · best ${fmt(best)}</div>
+      </div>`);
+  }
+}
+
+/* ---------------- Live status-bar clock ---------------- */
+function clockTick(){
+  const n=new Date();
+  let h=n.getHours()%12; if(h===0)h=12;
+  $("clock").textContent=h+":"+String(n.getMinutes()).padStart(2,"0");
+}
+setInterval(clockTick,10000); clockTick();
+
+render();
+</script>
+</body>
+</html>
