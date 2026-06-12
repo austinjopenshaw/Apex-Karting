@@ -47,8 +47,7 @@ that doesn't is parked in "Later" below.
 ### 1. ⏱️ Lap Timer (the hero)
 The thing people open the app for. Must be **dead simple to operate trackside.**
 - Huge, glanceable current-lap display
-- One giant "+ Lap" button (thumb-reachable) **and** optional GPS auto-lap
-  (cross the start/finish line, it logs automatically — no tapping)
+- One giant "+ Lap" button, thumb-reachable so it's easy to tap trackside
 - Live delta vs. your best lap (green = faster, red = slower) so you get instant
   feedback lap to lap
 - Last / Best / Lap-count always visible
@@ -87,6 +86,7 @@ Parked on purpose to keep v1 focused and shippable:
 
 - Social feed / friends / public leaderboards
 - Live multi-driver session sharing & spectating
+- GPS auto-lap (cross the start/finish line, it logs automatically — no tapping)
 - Video sync (overlay lap times on GoPro footage)
 - Full GPS telemetry: sector times, speed traces, track maps
 - Coaching marketplace / share setups with other racers
@@ -104,7 +104,7 @@ Several of these (video, telemetry, event mode, watch app) are strong
 
 | Pain in existing app | Apex's answer |
 |---|---|
-| Fiddly trackside entry | One huge lap button + GPS auto-lap |
+| Fiddly trackside entry | One huge, thumb-reachable lap button |
 | "Just a stopwatch" | Live delta, PBs, trend, consistency |
 | Ugly / dated | Clean dark "performance tool" design |
 | Forgets your setup | Garage with setups tied to every session |

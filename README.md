@@ -27,7 +27,7 @@ See **[PRODUCT.md](./PRODUCT.md)** for:
 - A suggested free / Pro business model
 
 ## MVP at a glance
-1. ⏱️ **Lap Timer** — big, trackside-friendly, GPS auto-lap, live delta
+1. ⏱️ **Lap Timer** — big, trackside-friendly tap-to-lap, live delta
 2. 📋 **Session Log** — track, weather, full lap times, notes, auto-saved
 3. 🔧 **Garage** — karts + setup sheets tied to every session
 4. 📈 **Insights** — best-lap trend, PBs per track, consistency
